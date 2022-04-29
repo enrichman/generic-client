@@ -19,8 +19,18 @@ func Execute() {
 	}
 }
 
+type RootConfig struct {
+	Name            string
+	NamespaceConfig NamespaceConfig
+}
+
+var DefaultRootConfig = RootConfig{
+	Name:            "default_root_name",
+	NamespaceConfig: DefaultNamespaceConfig,
+}
+
 func newRootCmd() *cobra.Command {
-	config := NewConfig()
+	config := DefaultRootConfig
 
 	rootCmd := &cobra.Command{
 		Use:   "epinioctl",
@@ -49,7 +59,7 @@ func newRootCmd() *cobra.Command {
 	return rootCmd
 }
 
-func bindRootFlags(flags, persistentFlags *pflag.FlagSet, config *Config) {
+func bindRootFlags(flags, persistentFlags *pflag.FlagSet, config *RootConfig) {
 	flags.BoolP("toggle", "t", false, "Help message for toggle")
 	persistentFlags.StringVarP(&config.Name, "name", "n", "default_name", "Set your name")
 }
