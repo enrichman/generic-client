@@ -1,1 +1,1 @@
-# epinio-client-go
+# generic-client

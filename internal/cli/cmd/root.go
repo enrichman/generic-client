@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"os"
 
-	"github.com/enrichman/epinio-client-go/pkg/client"
+	"github.com/enrichman/generic-client/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -19,47 +19,31 @@ func Execute() {
 	}
 }
 
-type RootConfig struct {
-	Name            string
-	NamespaceConfig NamespaceConfig
-}
-
-var DefaultRootConfig = RootConfig{
-	Name:            "default_root_name",
-	NamespaceConfig: DefaultNamespaceConfig,
-}
-
 func newRootCmd() *cobra.Command {
-	config := DefaultRootConfig
+	config := newConfig()
 
 	rootCmd := &cobra.Command{
-		Use:   "epinioctl",
-		Short: "A brief description of your application",
-		Long: `A longer description that spans multiple lines and likely contains
-	examples and usage of using your application. For example:
-	
-	Cobra is a CLI library for Go that empowers applications.
-	This application is a tool to generate the needed files
-	to quickly create a Cobra application.`,
+		Use:               "epinioctl",
+		Short:             "A brief description of your application",
 		PersistentPreRunE: initializeConfigPreRun,
 		Run: func(cmd *cobra.Command, args []string) {
-			out := cmd.OutOrStdout()
-			fmt.Fprintln(out, "Your name is:", config.Name)
+			cmd.Usage()
 		},
 	}
 
 	// init flags
-	bindRootFlags(rootCmd.Flags(), rootCmd.PersistentFlags(), &config)
+	bindRootFlags(rootCmd.Flags(), rootCmd.PersistentFlags(), config)
 
 	ep := client.NewClient(http.DefaultClient, "http://localhost")
+	ep.Users.List(context.Background())
 
 	// add commands
-	rootCmd.AddCommand(newNamespaceCmd(&config, ep.Namespace))
+	rootCmd.AddCommand(newUserCmd(config, ep.Users))
 
 	return rootCmd
 }
 
-func bindRootFlags(flags, persistentFlags *pflag.FlagSet, config *RootConfig) {
+func bindRootFlags(flags, persistentFlags *pflag.FlagSet, config *Config) {
 	flags.BoolP("toggle", "t", false, "Help message for toggle")
 	persistentFlags.StringVarP(&config.Name, "name", "n", "default_name", "Set your name")
 }

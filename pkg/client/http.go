@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -13,16 +11,7 @@ type Client struct {
 	httpClient *http.Client
 	BaseURL    string
 
-	Namespace *NamespaceService
-}
-
-type GenericResponse[T any] struct {
-	StatusCode int
-	Response   T
-}
-
-type StatusResponse struct {
-	Status string `json:"status"`
+	Users *UserService
 }
 
 func NewClient(httpClient *http.Client, baseURL string) *Client {
@@ -31,56 +20,46 @@ func NewClient(httpClient *http.Client, baseURL string) *Client {
 		BaseURL:    baseURL,
 	}
 
-	c.Namespace = &NamespaceService{c}
+	c.Users = &UserService{c}
 
 	return c
 }
 
-func get[R any](ctx context.Context, c *Client, path string, response R) (GenericResponse[R], error) {
+func get[R any](ctx context.Context, c *Client, path string, response R) (R, error) {
 	return do(ctx, c, http.MethodGet, path, nil, response)
 }
 
-func post[R any](ctx context.Context, c *Client, path string, payload any, response R) (GenericResponse[R], error) {
-	return do(ctx, c, http.MethodGet, path, nil, response)
+func post[R any](ctx context.Context, c *Client, path string, payload any, response R) (R, error) {
+	return do(ctx, c, http.MethodPost, path, nil, response)
 }
 
-func do[R any](ctx context.Context, c *Client, method, path string, payload any, response R) (GenericResponse[R], error) {
-	url := c.BaseURL + path
+func do[R any](ctx context.Context, c *Client, method, path string, payload any, response R) (R, error) {
+	emptyData := new(R)
 
 	body := new(bytes.Buffer)
 	if payload != nil {
 		err := json.NewEncoder(body).Encode(payload)
 		if err != nil {
-			return GenericResponse[R]{}, err
+			return *emptyData, err
 		}
 	}
 
-	req, err := http.NewRequest(method, url, body)
+	url := c.BaseURL + path
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
-		return GenericResponse[R]{}, err
+		return *emptyData, err
 	}
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return GenericResponse[R]{}, err
+		return *emptyData, err
 	}
+	defer res.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(res.Body)
+	err = json.NewDecoder(res.Body).Decode(&response)
 	if err != nil {
-		return GenericResponse[R]{}, err
+		return *emptyData, err
 	}
 
-	fmt.Println(string(bodyBytes))
-
-	err = json.Unmarshal(bodyBytes, &response)
-	if err != nil {
-		return GenericResponse[R]{}, err
-	}
-
-	//err = json.NewDecoder(res.Body).Decode(&response)
-
-	return GenericResponse[R]{
-		Response:   response,
-		StatusCode: res.StatusCode,
-	}, nil
+	return response, nil
 }

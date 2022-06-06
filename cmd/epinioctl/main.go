@@ -1,6 +1,6 @@
 package main
 
-import "github.com/enrichman/epinio-client-go/internal/cli/cmd"
+import "github.com/enrichman/generic-client/internal/cli/cmd"
 
 func main() {
 	cmd.Execute()
