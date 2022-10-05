@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"context"
+	"log"
 	"net/http"
-	"os"
 
 	"github.com/enrichman/generic-client/pkg/client"
 	"github.com/spf13/cobra"
@@ -13,17 +12,19 @@ import (
 func Execute() {
 	rootCmd := newRootCmd()
 
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
 	}
 }
 
-func newRootCmd() *cobra.Command {
-	config := newConfig()
+type Config struct {
+	Host    string
+	Verbose bool
+}
 
+func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:               "epinioctl",
+		Use:               "genctl",
 		Short:             "A brief description of your application",
 		PersistentPreRunE: initializeConfigPreRun,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -31,11 +32,12 @@ func newRootCmd() *cobra.Command {
 		},
 	}
 
+	config := &Config{}
+
 	// init flags
 	bindRootFlags(rootCmd.Flags(), rootCmd.PersistentFlags(), config)
 
 	ep := client.NewClient(http.DefaultClient, "http://localhost")
-	ep.Users.List(context.Background())
 
 	// add commands
 	rootCmd.AddCommand(newUserCmd(config, ep.Users))
@@ -44,6 +46,6 @@ func newRootCmd() *cobra.Command {
 }
 
 func bindRootFlags(flags, persistentFlags *pflag.FlagSet, config *Config) {
-	flags.BoolP("toggle", "t", false, "Help message for toggle")
-	persistentFlags.StringVarP(&config.Name, "name", "n", "default_name", "Set your name")
+	flags.BoolP("verbose", "v", false, "enable verbose")
+	persistentFlags.StringVar(&config.Host, "host", "", "Set your name")
 }

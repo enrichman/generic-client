@@ -6,12 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newUserListCmd(config *Config, userService gencli.UserService) *cobra.Command {
+func newUserCreateCmd(config *Config, userService gencli.UserService) *cobra.Command {
 	return &cobra.Command{
-		Use: "list",
+		Use: "create",
 		Run: func(cmd *cobra.Command, args []string) {
-			u, err := userService.List(cmd.Context())
-			ui.List(cmd.OutOrStdout(), u, err)
+			u, err := userService.Create(cmd.Context(), "")
+			ui.Create(cmd.OutOrStdout(), u, err)
 		},
 	}
 }
